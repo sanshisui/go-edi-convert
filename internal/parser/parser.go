@@ -21,7 +21,27 @@ func readWholeFile(path string) {
 		log.Fatal(err)
 	}
 
-	fmt.Println("读取的数据内容为:", string(data))
+	// 去除所有换行符（Windows、Unix和Mac）
+	content := string(data)
+	content = strings.ReplaceAll(content, "\r\n", "") // Windows换行
+	content = strings.ReplaceAll(content, "\r", "")   // Mac换行
+	content = strings.ReplaceAll(content, "\n", "")   // Unix换行
+
+	fmt.Println("读取的数据内容为:", content)
+
+	segment := strings.Split(content, "'")
+	for a, b := range segment {
+		if len(b) == 0 || strings.HasPrefix(b, "UNA") {
+			continue
+		}
+		if strings.HasPrefix(b, "UNB") {
+			unb := strings.Split(b, "+")
+			fmt.Println(len(unb))
+			fmt.Println(unb)
+			break
+		}
+		fmt.Println(a, b)
+	}
 }
 
 func readLineFile(path string) {
@@ -41,9 +61,14 @@ func readLineFile(path string) {
 			continue
 		}
 
-		if strings.HasPrefix(line, "UNA") {
+		//if strings.HasPrefix(line, "UNA") {
+		//	fmt.Println("读取到了以UNA开头的数据")
+		//}
 
-		}
-		fmt.Println("读取到的数据为:", line)
+		stringArrange := strings.Split(line, "'")
+
+		fmt.Println("分割后的字符串数组", stringArrange)
+
+		//fmt.Println("读取到的数据为:", line)
 	}
 }
