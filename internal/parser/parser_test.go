@@ -3,7 +3,9 @@ package parser
 import "testing"
 
 func TestReadWholeFile(t *testing.T) {
-	readWholeFile("../data/order.txt")
+	// readWholeFile("../data/order.txt")
+	readWholeFiles("../data/order.txt")
+
 }
 
 func TestReadLineFile(t *testing.T) {
