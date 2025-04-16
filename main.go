@@ -2,144 +2,132 @@ package main
 
 import (
 	"encoding/xml"
-	"fmt"
+	"log"
 	"os"
+	"strings"
 )
 
-type Schema struct {
-	XMLName      xml.Name      `xml:"schema"`
-	Elements     []Element     `xml:"element"`
-	ComplexTypes []ComplexType `xml:"complexType"`
+type TreeNode struct {
+	Name     string
+	Type     string
+	Children []TreeNode
 }
 
-type Element struct {
-	Name        string       `xml:"name,attr"`
-	Type        string       `xml:"type,attr"`
-	MinOccurs   string       `xml:"minOccurs,attr,omitempty"`
-	MaxOccurs   string       `xml:"maxOccurs,attr,omitempty"`
-	Sequence    *Sequence    `xml:"sequence,omitempty"`
-	Annotation  *Annotation  `xml:"annotation,omitempty"`
-	ComplexType *ComplexType `xml:"complexType,omitempty"` // 内联复杂类型定义
+type TreeNodeChild struct {
+	Name     string
+	Type     string
 }
 
-type ComplexType struct {
-	Name       string      `xml:"name,attr"`
-	Sequence   *Sequence   `xml:"sequence,omitempty"`
-	Annotation *Annotation `xml:"annotation,omitempty"`
+// XSD 结构体定义
+type XSDSchema struct {
+	XMLName      xml.Name         `xml:"schema"`
+	Elements     []XSDElement     `xml:"element"`
+	ComplexTypes []XSDComplexType `xml:"complexType"`
 }
 
-type Sequence struct {
-	MinOccurs string     `xml:"minOccurs,attr,omitempty"`
-	MaxOccurs string     `xml:"maxOccurs,attr,omitempty"`
-	Elements  []Element  `xml:"element"`
-	Sequences []Sequence `xml:"sequence,omitempty"` // 嵌套序列
+type XSDElement struct {
+	Name      string `xml:"name,attr"`
+	Type      string `xml:"type,attr"`
+	MinOccurs string `xml:"minOccurs,attr"`
+	MaxOccurs string `xml:"maxOccurs,attr"`
+	// 递归子节点
+	ComplexType *XSDComplexType `xml:"complexType"`
+	Sequence    *XSDSequence    `xml:"sequence"`
 }
 
-type Annotation struct {
-	AppInfo       string `xml:"appinfo"`
-	Documentation string `xml:"documentation"`
+type XSDComplexType struct {
+	Name     string       `xml:"name,attr"`
+	Sequence *XSDSequence `xml:"sequence"`
+}
+
+type XSDSequence struct {
+	Elements  []XSDElement  `xml:"element"`
+	Sequences []XSDSequence `xml:"sequence"`
 }
 
 func main() {
-	data, err := os.ReadFile("./internal/data/order.xsd")
+	data, err := os.ReadFile("./internal/data/order1.xsd")
 	if err != nil {
-		fmt.Printf("读取文件错误: %v\n", err)
-		return
+		log.Fatal("读取xsd文件出现了异常", err)
 	}
 
-	var schema Schema
+	var schema XSDSchema
 	err = xml.Unmarshal(data, &schema)
 	if err != nil {
-		fmt.Printf("解析XML错误: %v\n", err)
-		return
+		log.Fatal("解析xsd文件出现了异常", err)
 	}
 
-	// 打印顶层元素
-	fmt.Println("顶层元素:")
-	for _, elem := range schema.Elements {
-		fmt.Printf("元素名: %s, 类型: %s\n", elem.Name, elem.Type)
-		if elem.MinOccurs != "" || elem.MaxOccurs != "" {
-			fmt.Printf("  出现次数: 最小=%s, 最大=%s\n",
-				getDefaultIfEmpty(elem.MinOccurs, "1"),
-				getDefaultIfEmpty(elem.MaxOccurs, "1"))
-		}
+	log.Println(schema.ComplexTypes)
 
-		if elem.Annotation != nil {
-			printAnnotation(elem.Annotation, "  ")
-		}
+	if len(schema.Elements) == 0 {
+		log.Fatal("没有找到根节点")
 	}
 
-	// 打印复杂类型
-	fmt.Println("\n复杂类型:")
-	for _, complexType := range schema.ComplexTypes {
-		fmt.Printf("复杂类型名: %s\n", complexType.Name)
+	rootElem := schema.Elements[0]
+	log.Println(rootElem)
 
-		if complexType.Annotation != nil {
-			printAnnotation(complexType.Annotation, "  ")
-		}
-
-		if complexType.Sequence != nil {
-			printSequence(complexType.Sequence, "  ")
-		}
-		fmt.Println()
+	// 定义复合类型
+	complexTypeMap := make(map[string]XSDComplexType)
+	for _, ct := range schema.ComplexTypes {
+		complexTypeMap[ct.Name] = ct
 	}
-}
 
-// 打印注释信息
-func printAnnotation(annotation *Annotation, indent string) {
-	if annotation.AppInfo != "" {
-		fmt.Printf("%s应用信息: %s\n", indent, annotation.AppInfo)
-	}
-	if annotation.Documentation != "" {
-		fmt.Printf("%s文档说明: %s\n", indent, annotation.Documentation)
-	}
-}
+	ct := schema.ComplexTypes[1]
+	//log.Println(ct.Sequence.Elements)
+	var nodes []TreeNode
+	for _, se := range ct.Sequence.Elements {
+		//log.Println(se)
+		if strings.HasPrefix(se.Name, "GROUP") {
+			ct := complexTypeMap[se.Name]
+			name := ct.Sequence.Elements[0].Name
+			var nodeChilds []TreeNode
+			for i := 1; i < len(ct.Sequence.Elements); i++ {
 
-// 打印序列信息
-func printSequence(sequence *Sequence, indent string) {
-	minOccurs := getDefaultIfEmpty(sequence.MinOccurs, "1")
-	maxOccurs := getDefaultIfEmpty(sequence.MaxOccurs, "1")
+				if strings.HasPrefix(ct.Sequence.Elements[i].Name, "GROUP") {
+					ct1 := complexTypeMap[ct.Sequence.Elements[i].Name]
+					name := ct.Sequence.Elements[0].Name
+					var nodeChilds []TreeNode
+					for j := 1; j < len(ct1.Sequence.Elements); j++ {
+						if strings.HasPrefix(ct.Sequence.Elements[j].Name, "GROUP") {
+							ct := complexTypeMap[ct.Sequence.Elements[j].Name]
+							name := ct.Sequence.Elements[0].Name
+							var nodeChilds []TreeNode
+							for k := 1; k < len(ct.Sequence.Elements); k++ {
+								nodeChilds = append(nodeChilds, TreeNode{Name: name, Type: getNodeType(ct.Sequence.Elements[k].MinOccurs, ct.Sequence.Elements[k].MaxOccurs)})
+							}
+						}
+					}
+					nodes = append(nodes, TreeNode{Name: name, Type: getNodeType(ct.Sequence.Elements[i].MinOccurs, ct.Sequence.Elements[i].MaxOccurs), Children: nodeChilds})
+				}
 
-	fmt.Printf("%s序列出现次数: 最小=%s, 最大=%s\n", indent, minOccurs, maxOccurs)
-	fmt.Printf("%s包含的元素:\n", indent)
-
-	for _, elem := range sequence.Elements {
-		elemMinOccurs := getDefaultIfEmpty(elem.MinOccurs, "1")
-		elemMaxOccurs := getDefaultIfEmpty(elem.MaxOccurs, "1")
-
-		fmt.Printf("%s  - 元素名: %s, 类型: %s, 最小出现: %s, 最大出现: %s\n",
-			indent, elem.Name, elem.Type, elemMinOccurs, elemMaxOccurs)
-
-		if elem.Annotation != nil {
-			printAnnotation(elem.Annotation, indent+"    ")
-		}
-
-		if elem.Sequence != nil {
-			printSequence(elem.Sequence, indent+"    ")
-		}
-
-		if elem.ComplexType != nil {
-			fmt.Printf("%s    内联复杂类型:\n", indent)
-			if elem.ComplexType.Sequence != nil {
-				printSequence(elem.ComplexType.Sequence, indent+"      ")
+				nodeChilds = append(nodeChilds, TreeNode{Name: ct.Sequence.Elements[i].Name, Type: getNodeType(ct.Sequence.Elements[i].MinOccurs, ct.Sequence.Elements[i].MaxOccurs)})
 			}
+			nodes = append(nodes, TreeNode{Name: name, Type: getNodeType(se.MinOccurs, se.MaxOccurs), Children: nodeChilds})
+			continue
 		}
+
+
+		
+		nodes = append(nodes, TreeNode{Name: se.Name, Type: getNodeType(se.MinOccurs, se.MaxOccurs), Children: nil})
+
 	}
 
-	// 处理嵌套序列
-	if len(sequence.Sequences) > 0 {
-		fmt.Printf("%s嵌套序列:\n", indent)
-		for i, nestedSeq := range sequence.Sequences {
-			fmt.Printf("%s  嵌套序列 #%d:\n", indent, i+1)
-			printSequence(&nestedSeq, indent+"    ")
-		}
-	}
+
+
+
+
+	log.Println(nodes)
+
+	
 }
 
-// 获取默认值（如果为空）
-func getDefaultIfEmpty(value, defaultValue string) string {
-	if value == "" {
-		return defaultValue
+
+
+
+
+func getNodeType(minOccurs, maxOccurs string) string {
+	if (minOccurs == "" && maxOccurs == "") || (minOccurs == "0" && maxOccurs == "") {
+		return "Object"
 	}
-	return value
+	return "Array"
 }

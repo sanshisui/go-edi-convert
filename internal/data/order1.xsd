@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:element name="EDIFACT" type="EDIFACT"/>
+	<xsd:complexType name="EDIFACT">
+		<xsd:sequence maxOccurs="unbounded">
+			<xsd:element name="UNB" type="xsd:string"/>
+			<xsd:sequence maxOccurs="unbounded">
+				<xsd:element name="UNG" type="xsd:string" minOccurs="0"/>
+				<xsd:element name="ORDERS" type="ORDERS" maxOccurs="unbounded"/>
+				<xsd:element name="UNE" type="xsd:string" minOccurs="0"/>
+			</xsd:sequence>
+			<xsd:element name="UNZ" type="xsd:string" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ORDERS">
+		<xsd:sequence>
+			<xsd:element name="UNH" type="xsd:string"/>
+			<xsd:element name="BGM" type="xsd:string"/>
+			<xsd:element name="DTM" type="xsd:string" maxOccurs="35"/>
+			<xsd:element name="PAI" type="xsd:string" minOccurs="0"/>
+			<xsd:element name="ALI" type="xsd:string" minOccurs="0" maxOccurs="5"/>
+			<xsd:element name="IMD" type="xsd:string" minOccurs="0"/>
+			<xsd:element name="FTX" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="GROUP_1" type="GROUP_1" minOccurs="0" maxOccurs="10"/>
+        </xsd:sequence>
+	</xsd:complexType>
+    <xsd:complexType name="GROUP_1">
+		<xsd:sequence>
+			<xsd:element name="RFF" type="xsd:string"/>
+			<xsd:element name="DTM" type="xsd:string" minOccurs="0" maxOccurs="5"/>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsd:schema>
