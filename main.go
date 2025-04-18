@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -136,7 +137,6 @@ func main() {
 
 	segment := strings.Split(content, "'")
 	i := 0
-	p := 0
 	results := map[string]interface{}{}
 	for _, b := range segment {
 		if len(b) == 0 || strings.HasPrefix(b, "UNA") || strings.HasPrefix(b, "UNB") {
@@ -148,6 +148,7 @@ func main() {
 		// 	log.Println(unb)
 		// 	break
 		// }
+		
 		for true {
 			if strings.HasPrefix(b, nodes[i].Name) {
 				log.Println(nodes[i].Name, b[:3])
@@ -155,16 +156,18 @@ func main() {
 					se := strings.Split(b, "+")
 					obj := map[string]interface{}{}
 					for m := 1; m < len(se); m++  {
+						fieldKey := fmt.Sprintf("%s%02d", se[0], m) // 使用格式化字符串生成 Key，例如 UNH01, UNH02
 						if strings.Contains(se[m], ":") {
 							smc := strings.Split(se[m], ":")
 							objc := map[string]interface{}{}
 							for l := 0; l < len(smc); l++  {
-								objc[se[0] + string(rune(m)) + string(rune(l + 1))] = smc[l]
+								componentKey := fmt.Sprintf("%s%02d", fieldKey, l+1) // 例如 UNH0201, UNH0202
+								objc[componentKey] = smc[l]
 							}
-							obj[se[0] + string(rune(m))] = objc
+							obj[fieldKey] = objc
 							continue
 						}
-						obj[se[0] + string(rune(m))] = se[m]
+						obj[fieldKey] = se[m]
 					}
 					results[nodes[i].Name] = obj
 					i++
@@ -173,17 +176,19 @@ func main() {
 					se := strings.Split(b, "+")
 					obj := map[string]interface{}{}
 					for m := 1; m < len(se); m++  {
+						fieldKey := fmt.Sprintf("%s%02d", se[0], m) // 使用格式化字符串生成 Key
 						if strings.Contains(se[m], ":") && !strings.Contains(se[m], "?:") {
 							smc := strings.Split(se[m], ":")
 							objc := map[string]interface{}{}
 							for l := 0; l < len(smc); l++  {
-								objc[se[0] + string(rune(m)) + string(rune(l + 1))] = smc[l]
+								componentKey := fmt.Sprintf("%s%02d", fieldKey, l+1) // 例如 LIN0101, LIN0102
+								objc[componentKey] = smc[l]
 							}
-							obj[se[0] + string(rune(m))] = objc
+							obj[fieldKey] = objc
 							continue
 						}
 						
-						obj[se[0] + string(rune(m))] = se[m]
+						obj[fieldKey] = se[m]
 					}
 					//results[nodes[i].Name] = append(results[nodes[i].Name].([]interface{}), obj)
 					if arr, ok := results[nodes[i].Name].([]interface{}); ok {
@@ -193,17 +198,13 @@ func main() {
 					}
 					break
 				}
-			}else if nodes[i].Children != nil && strings.HasPrefix(b, nodes[i].Children[p].Name) {
-				
-			} else {
+			}else {
 				i++
 			}
 		}
-
-
-		
-		
 	}
+
+
 
 	// log.Println("i的值", i)
 		// 输出最终JSON

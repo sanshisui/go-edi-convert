@@ -383,3 +383,64 @@
 // 		printGroupDef(child, level+1)
 // 	}
 // }
+
+
+
+
+
+
+for true {
+			if strings.HasPrefix(b, nodes[i].Name) {
+				log.Println(nodes[i].Name, b[:3])
+				if nodes[i].Type == "Object"  {
+					se := strings.Split(b, "+")
+					obj := map[string]interface{}{}
+					for m := 1; m < len(se); m++  {
+						fieldKey := fmt.Sprintf("%s%02d", se[0], m) // 使用格式化字符串生成 Key，例如 UNH01, UNH02
+						if strings.Contains(se[m], ":") {
+							smc := strings.Split(se[m], ":")
+							objc := map[string]interface{}{}
+							for l := 0; l < len(smc); l++  {
+								componentKey := fmt.Sprintf("%s%02d", fieldKey, l+1) // 例如 UNH0201, UNH0202
+								objc[componentKey] = smc[l]
+							}
+							obj[fieldKey] = objc
+							continue
+						}
+						obj[fieldKey] = se[m]
+					}
+					results[nodes[i].Name] = obj
+					i++
+					break
+				}else {
+					se := strings.Split(b, "+")
+					obj := map[string]interface{}{}
+					for m := 1; m < len(se); m++  {
+						fieldKey := fmt.Sprintf("%s%02d", se[0], m) // 使用格式化字符串生成 Key
+						if strings.Contains(se[m], ":") && !strings.Contains(se[m], "?:") {
+							smc := strings.Split(se[m], ":")
+							objc := map[string]interface{}{}
+							for l := 0; l < len(smc); l++  {
+								componentKey := fmt.Sprintf("%s%02d", fieldKey, l+1) // 例如 LIN0101, LIN0102
+								objc[componentKey] = smc[l]
+							}
+							obj[fieldKey] = objc
+							continue
+						}
+						
+						obj[fieldKey] = se[m]
+					}
+					//results[nodes[i].Name] = append(results[nodes[i].Name].([]interface{}), obj)
+					if arr, ok := results[nodes[i].Name].([]interface{}); ok {
+						results[nodes[i].Name] = append(arr, obj)
+					} else {
+						results[nodes[i].Name] = []interface{}{obj}
+					}
+					break
+				}
+			}else if nodes[i].Children != nil && strings.HasPrefix(b, nodes[i].Children[p].Name) {
+				
+			} else {
+				i++
+			}
+		}

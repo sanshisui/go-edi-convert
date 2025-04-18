@@ -3,11 +3,14 @@ UNB+UNOC:3+3663816900024:14+4897106890002:14+250320:1400+00015543++++++1'
 UNH+1+ORDERS:D:96A:UN:EAN008'
 BGM+220+4200040981+9'
 DTM+4:20250320:102'
-DTM+2:20250522:102'
 FTX+AAI+++COMMANDE ACHAT - TYPE REASSORT'FTX+PUR+++Condition de livraison ?: CIF HONG KONG'
+ARR+1'
 FTX+PUR+++Condition de paiement ?: 60 jours date de facture'
+ARR+1'
 FTX+SUR+++RETOVDE'
+ARR+1'
 FTX+ORI+++Etiquetage � r�aliser par le fournisseur'
+ARR+1'
 
 
 
